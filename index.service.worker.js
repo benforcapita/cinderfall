@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1789035445|1797613';
+const CACHE_VERSION = '1789039322|1697617';
 /** @type {string} */
 const CACHE_PREFIX = 'Diablo-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
