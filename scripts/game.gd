@@ -672,27 +672,46 @@ func show_settings() -> void:
 		show_settings())
 	add_button(column, "BACK", close_modal if playing else show_menu)
 
-func show_inventory() -> void:
+func show_inventory(scroll_position: int = 0) -> void:
 	if playing and not cleared:
 		hud.notify("Equipment is available after the room is cleared")
 		return
 	paused = playing
-	var column = panel("THE WARDEN'S PACK", "%d / 20 slots  ·  Tap an item to equip it" % profile.inventory.size())
+	var column = panel("THE WARDEN'S PACK", "%d of 20 slots free  ·  Swipe to browse / tap to equip" % (20 - profile.inventory.size()))
+	column.add_theme_constant_override("separation", 10)
 	var derived = Store.stats(profile)
 	var summary = Label.new()
 	summary.text = "POWER %d   /   ARMOR %d   /   HEALTH %d" % [derived.power, derived.defense, derived.health]
 	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(summary)
-	var scroll = ScrollContainer.new()
+	var equipment = HBoxContainer.new()
+	equipment.name = "EquipmentSlots"
+	equipment.add_theme_constant_override("separation", 8)
+	column.add_child(equipment)
+	for slot in ["weapon", "armor", "accessory"]:
+		var equipped_name = "EMPTY"
+		for item in profile.inventory:
+			if profile.equipment.get(slot, "") == item.id:
+				equipped_name = item.name + " +" + str(item.value)
+		var card = Button.new()
+		card.text = slot.to_upper() + "\n" + equipped_name
+		card.icon = Icons.texture(slot)
+		card.add_theme_constant_override("icon_max_width", 32)
+		card.add_theme_font_size_override("font_size", 16)
+		card.add_theme_stylebox_override("disabled", hud.button_style())
+		card.disabled = true
+		card.custom_minimum_size = Vector2(220, 72)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		equipment.add_child(card)
+	var scroll = preload("res://scripts/inventory_scroll.gd").new()
 	scroll.custom_minimum_size = Vector2(660, 260)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
+	scroll.get_v_scroll_bar().custom_minimum_size.x = 24
 	column.add_child(scroll)
 	var list = VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list)
-	if profile.inventory.is_empty():
-		var empty = Label.new()
-		empty.text = "Your pack is empty. Guardians carry forgotten relics."
-		list.add_child(empty)
 	for item in profile.inventory:
 		var equipped = profile.equipment.get(item.slot, "") == item.id
 		var text = ("◆ " if equipped else "") + ["COMMON", "RARE", "EPIC"][item.rarity] + "  " + item.name + "  +" + str(item.value)
@@ -702,7 +721,7 @@ func show_inventory() -> void:
 			hero.maximum = stats.health
 			hero.hp = minf(hero.hp, hero.maximum)
 			save_checkpoint()
-			show_inventory())
+			show_inventory(scroll.scroll_vertical))
 		item_button.icon = Icons.texture(item.slot)
 		item_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		item_button.add_theme_constant_override("icon_max_width", 52)
@@ -714,4 +733,11 @@ func show_inventory() -> void:
 		item_style.content_margin_right = 18
 		item_button.add_theme_stylebox_override("normal", item_style)
 		item_button.add_theme_color_override("font_color", Icons.rarity_color(item.rarity))
-	add_button(column, "BACK", close_modal if playing else show_menu)
+	for i in range(profile.inventory.size(), 20):
+		var empty = add_button(list, "SLOT %02d  ·  EMPTY" % (i + 1), func(): pass)
+		empty.disabled = true
+		empty.add_theme_stylebox_override("disabled", hud.button_style())
+		empty.add_theme_color_override("font_disabled_color", Color("7d939d"))
+	scroll.set_deferred("scroll_vertical", scroll_position)
+	var back = add_button(column, "BACK", close_modal if playing else show_menu)
+	back.name = "InventoryBack"

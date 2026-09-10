@@ -8,6 +8,7 @@ Open `project.godot` in **standard Godot 4.7** and press F6/F5 on `scenes/app_ro
 - EMBER fires a bolt. NOVA damages, knocks back, and stuns nearby enemies (aiming places its center ahead). MEND restores health and grants four seconds of armor.
 - Tap ENTER THE GATE or walk into the cyan gate. Two waves fill each combat/elite room; the last room contains a two-phase boss.
 - Walk over gold-colored gear to collect it. After combat, BAG lets you equip weapon, armor, and accessory. Full inventory leaves drops on the ground.
+- Inventory shows equipped gear, all 20 bag slots, and the number of free slots. Swipe the list on touchscreens or use the mouse wheel/scrollbar. Swipes never equip items; tapping equips and keeps your scroll position. Back stays outside the scrolling list.
 - Desktop fallback: WASD, Space, 1/2/3 for skills, E to advance, I inventory, Esc pause.
 
 Public web build: **https://benforcapita.github.io/cinderfall/**. Open on a phone in landscape; the first load downloads approximately 39 MB. Progress is saved in this browser, not shared between devices.
@@ -28,6 +29,7 @@ Character progress is committed at room clear and when equipping or collecting g
 godot --headless --path . --script res://tests/run_tests.gd
 godot --headless --path . --script res://tests/visual_tests.gd
 godot --headless --path . --script res://tests/touch_tests.gd
+godot --headless --path . --script res://tests/inventory_tests.gd
 godot --headless --path . --fixed-fps 60 --script res://tests/playthrough.gd -- 719
 mkdir -p builds/web
 godot --headless --path . --export-release Web
