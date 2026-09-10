@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/skill_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = "slash"
+title = "SLASH"
+cooldown = 0.48
+windup = 0.12
+recovery = 0.12
+range = 3.0
+targeting = "actor"
+effects = Array[Dictionary]([{"kind":"cone"}])

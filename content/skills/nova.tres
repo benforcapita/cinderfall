@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/skill_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = "nova"
+title = "NOVA"
+cost = 28.0
+cooldown = 7.0
+windup = 0.3
+recovery = 0.2
+range = 4.5
+power = 1.8
+targeting = "ground"
+effects = Array[Dictionary]([{"kind":"area"}, {"kind":"knockback", "distance":0.7, "stagger":1.5}])

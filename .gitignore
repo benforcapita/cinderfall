@@ -1,0 +1,8 @@
+.godot/
+.godot-before-mcp-fix/
+builds/
+*.tmp
+.DS_Store
+.env
+.env.*
+.codex/

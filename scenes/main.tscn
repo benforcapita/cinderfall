@@ -1,0 +1,38 @@
+[gd_scene format=3]
+
+[node name="Main" type="Node2D"]
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.035, 0.025, 0.055, 1)
+
+[node name="Title" type="Label" parent="."]
+offset_left = 360.0
+offset_top = 260.0
+offset_right = 920.0
+offset_bottom = 330.0
+theme_override_colors/font_color = Color(0.95, 0.75, 0.3, 1)
+theme_override_font_sizes/font_size = 42
+text = "DIABLO PROTOTYPE"
+horizontal_alignment = 1
+
+[node name="Status" type="Label" parent="."]
+offset_left = 360.0
+offset_top = 340.0
+offset_right = 920.0
+offset_bottom = 390.0
+theme_override_colors/font_color = Color(0.8, 0.8, 0.85, 1)
+theme_override_font_sizes/font_size = 22
+text = "Project started successfully"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="."]
+offset_left = 360.0
+offset_top = 410.0
+offset_right = 920.0
+offset_bottom = 450.0
+theme_override_colors/font_color = Color(0.55, 0.55, 0.6, 1)
+theme_override_font_sizes/font_size = 16
+text = "Godot 4.7 • Ready for the first dungeon room"
+horizontal_alignment = 1

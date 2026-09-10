@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/skill_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = "mend"
+title = "MEND"
+cost = 25.0
+cooldown = 11.0
+windup = 0.35
+recovery = 0.2
+range = 0.0
+power = 42.0
+targeting = "self"
+effects = Array[Dictionary]([{"kind":"heal"}, {"kind":"modifier", "stat":"defense", "value":12.0, "duration":4.0}])

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/skill_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = "ember"
+title = "EMBER"
+cost = 18.0
+cooldown = 3.0
+windup = 0.22
+recovery = 0.15
+range = 15.0
+power = 2.3
+targeting = "direction"
+effects = Array[Dictionary]([{"kind":"projectile"}])
