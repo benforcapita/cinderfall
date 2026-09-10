@@ -22,6 +22,7 @@ Character progress is committed at room clear and when equipping or collecting g
 
 ```sh
 godot --headless --path . --script res://tests/run_tests.gd
+godot --headless --path . --script res://tests/visual_tests.gd
 godot --headless --path . --fixed-fps 60 --script res://tests/playthrough.gd -- 719
 mkdir -p builds/web
 godot --headless --path . --export-release Web
@@ -47,6 +48,14 @@ Web uses Compatibility rendering and single-threaded WebAssembly. Export templat
 - `content/skills/*.tres`: editable immutable skill Resources; `scripts/content.gd`: balance catalog, loot rolls and seeded sequence.
 - `scenes/rooms/*.tscn`, `scripts/room.gd`: eight room variants, sockets, boundary collision and walkable navigation polygon.
 - `scripts/projectile_pool.gd`: bounded projectiles and swept hit detection.
+- `scripts/icons.gd`: cached block-pixel icons for all four abilities and three equipment types, plus ability/rarity colors.
+- `scripts/block_effect.gd`: preallocated cube effects for sword arcs, Ember sparks, Nova fragments, and rising healing runes. Actor animations are presentation-only; damage and cast timings still use the original combat rules.
+
+## Blocky visual pass
+
+The HUD keeps its original touch hitboxes and adds colored ability icons above the labels and mana/cooldown readouts. Inventory items have matching equipment icons and rarity borders; ground drops show miniature swords, chest armor, or square signets. Characters animate their legs, anticipate attacks, swing or cast, recoil on impact, and fall/shrink on death. Death removes an actor from combat immediately; its remaining animation is visual only. Projectile cores and trails use cubes, and spell bursts share a fixed pool of 16 effects with 12 blocks each. Icons are generated once and reused, with no external art downloads.
+
+The visual test suite checks icon coverage/caching, animation reset and death lifecycle, real cast integration, bounded effects, and inventory icons. Physical-phone performance still needs testing.
 
 MCP is a development aid. Its three runtime IPC handlers are locally patched to do nothing in release builds. The external Node MCP server is not included or needed by the exported game. The bundled addon is from [mkdevkit/godot-mcp](https://github.com/mkdevkit/godot-mcp), under its [MIT license](addons/godot_mcp/LICENSE).
 

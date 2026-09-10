@@ -1,4 +1,5 @@
 extends Control
+const Icons = preload("res://scripts/icons.gd")
 signal action(index: int)
 signal inventory_requested
 signal pause_requested
@@ -40,6 +41,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	font = ThemeDB.fallback_font
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	pause_button = small_button("II", Vector2(84, 80), pause_requested.emit)
 	bag_button = small_button("BAG", Vector2(94, 80), inventory_requested.emit)
 	next_button = small_button("ENTER THE GATE  ›", Vector2(290, 80), advance_requested.emit)
@@ -181,14 +183,17 @@ func _draw() -> void:
 	label_at("MOVE", center + Vector2(-25, 119), 15, Color("a0b4bc"))
 	draw_circle(attack_rect.get_center(), 58, Color("865448") if held_attack else Color("493a36"))
 	draw_arc(attack_rect.get_center(), 58, 0, TAU, 64, GOLD, 2, true)
-	label_at("SLASH", attack_rect.position + Vector2(20, 63), 22, GOLD)
+	draw_texture_rect(Icons.texture("slash"), Rect2(attack_rect.position + Vector2(25, 7), Vector2(64, 64)), false)
+	label_at("SLASH", attack_rect.position + Vector2(22, 91), 20, GOLD)
 	label_at("HOLD / AIM", attack_rect.position + Vector2(2, 143), 14, Color("a0b4bc"))
 	for i in range(3):
 		var rect = skill_rects[i]
 		draw_style_box(button_style(), rect)
-		label_at(["EMBER", "NOVA", "MEND"][i], rect.position + Vector2(13, 31), 19, GOLD)
+		var id = ["ember", "nova", "mend"][i]
+		draw_texture_rect(Icons.texture(id), Rect2(rect.position + Vector2(28, 2), Vector2(44, 44)), false)
+		label_at(["EMBER", "NOVA", "MEND"][i], rect.position + Vector2(15, 58), 17, Icons.ability_color(id))
 		var cd = float(cooldowns[i + 1])
-		label_at(("%.1fs" % cd) if cd > 0 else ["18 MP", "28 MP", "25 MP"][i], rect.position + Vector2(18, 63), 17, Color("8ab9c8"))
+		label_at(("%.1fs" % cd) if cd > 0 else ["18 MP", "28 MP", "25 MP"][i], rect.position + Vector2(23, 78), 15, Color("8ab9c8"))
 		if cd > 0:
 			draw_rect(Rect2(rect.position, Vector2(rect.size.x, rect.size.y * minf(1, cd / [3.0, 7.0, 11.0][i]))), Color(0, 0, 0, 0.32))
 	if message_time > 0:

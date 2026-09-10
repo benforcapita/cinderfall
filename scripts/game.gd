@@ -7,6 +7,8 @@ const HUD = preload("res://scripts/mobile_hud.gd")
 const Projectiles = preload("res://scripts/projectile_pool.gd")
 const V = preload("res://scripts/visuals.gd")
 const StatusEffects = preload("res://scripts/status_effects.gd")
+const Icons = preload("res://scripts/icons.gd")
+const BlockEffect = preload("res://scripts/block_effect.gd")
 var statuses = StatusEffects.new()
 var store = Store.new()
 var profile: Dictionary
@@ -120,7 +122,8 @@ func _setup_ui() -> void:
 
 func _setup_pools() -> void:
 	for i in range(16):
-		var ring = V.ring(self, 1, Color("edbb81"))
+		var ring = BlockEffect.new()
+		add_child(ring)
 		ring.visible = false
 		fx.append({"node":ring, "life":0.0, "radius":1.0})
 	for i in range(24):
@@ -132,7 +135,7 @@ func _setup_pools() -> void:
 		add_child(label)
 		text_pool.append({"node":label, "life":0.0})
 	for i in range(20):
-		var mesh = V.box(self, Vector3.ZERO, Vector3(0.3, 0.45, 0.3), Color("e8bd79"))
+		var mesh = V.loot_model(self)
 		mesh.visible = false
 		drops.append({"node":mesh, "active":false, "item":{}})
 
@@ -243,6 +246,9 @@ func advance_room() -> void:
 	enter_room()
 
 func _physics_process(delta: float) -> void:
+	if not paused:
+		hero.tick_visual(delta)
+		for enemy in enemies: enemy.tick_visual(delta)
 	if not playing or paused: return
 	clock += delta
 	statuses.tick(delta)
@@ -297,8 +303,7 @@ func _physics_process(delta: float) -> void:
 	for effect in fx:
 		if effect.life <= 0: continue
 		effect.life -= delta
-		effect.node.scale = Vector3.ONE * effect.radius * (1.0 - effect.life / 0.4 + 0.1)
-		effect.node.visible = effect.life > 0
+		effect.node.tick(1.0 - effect.life / 0.4)
 	for entry in text_pool:
 		if entry.life <= 0: continue
 		entry.life -= delta
@@ -339,6 +344,7 @@ func try_cast(index: int) -> void:
 		var target = best_target()
 		if target != null: cast_aim = (target.position - hero.position).normalized()
 	hero.body.rotation.y = atan2(-cast_aim.x, -cast_aim.z)
+	hero.animate_attack(skill.id, skill.windup, skill.recovery)
 	ground_target = hero.position
 	if skill.targeting == "ground" and hud.aim.length() > 0.2:
 		ground_target = hero.position + cast_aim * 3.5
@@ -358,13 +364,15 @@ func commit_cast() -> void:
 func resolve_effect(skill: Resource, effect: Dictionary) -> void:
 	match effect.kind:
 		"cone":
-			burst(hero.position + cast_aim, 1.8)
+			burst(hero.position, skill.range, "slash", cast_aim)
 			for enemy in enemies:
 				if not enemy.active: continue
 				var offset: Vector3 = enemy.position - hero.position
 				if offset.length() < skill.range and offset.normalized().dot(cast_aim) > 0.15:
 					hit_actor(enemy, stats.power * skill.power)
-		"projectile": projectiles.fire(hero.position + cast_aim * 0.8, cast_aim, stats.power * skill.power, false)
+		"projectile":
+			projectiles.fire(hero.position + cast_aim * 0.8, cast_aim, stats.power * skill.power, false)
+			burst(hero.position, 2.0, "ember", cast_aim)
 		"area":
 			burst(ground_target, skill.range)
 			for enemy in enemies:
@@ -375,13 +383,14 @@ func resolve_effect(skill: Resource, effect: Dictionary) -> void:
 				if enemy.active and enemy.position.distance_to(ground_target) < skill.range:
 					enemy.stagger = effect.stagger
 					enemy.windup = 0
+					enemy.attack_time = 0
 					enemy.position += (enemy.position - ground_target).normalized() * effect.distance
 		"modifier":
 			statuses.apply(skill.id, effect.stat, effect.value, effect.duration)
 		"heal":
 			hero.hp = minf(hero.maximum, hero.hp + skill.power)
 			floating(hero.position, "+42", Color("8ae4c3"))
-			burst(hero.position, 2.0)
+			burst(hero.position, 2.0, "mend")
 
 func tick_enemy(enemy, delta: float) -> void:
 	var definition: Dictionary = Content.ENEMIES[enemy.kind]
@@ -398,6 +407,7 @@ func tick_enemy(enemy, delta: float) -> void:
 		burst(enemy.position, 5)
 	var distance: float = enemy.position.distance_to(hero.position)
 	if enemy.windup > 0:
+		enemy.body.rotation.y = atan2(-enemy.aim.x, -enemy.aim.z)
 		enemy.state = "windup"
 		enemy.windup -= delta
 		enemy.warning_ring.visible = true
@@ -417,6 +427,8 @@ func tick_enemy(enemy, delta: float) -> void:
 		return
 	if distance <= definition.range and enemy.cooldown <= 0:
 		enemy.windup = 0.85 if enemy.kind != "melee" else 0.55
+		enemy.body.rotation.y = atan2(-enemy.aim.x, -enemy.aim.z)
+		enemy.animate_attack("ember" if enemy.kind == "ranged" else "slash", enemy.windup, 0.2)
 		enemy.move_intent(Vector3.ZERO, 0, delta)
 	elif distance > definition.range * 0.9:
 		enemy.state = "chase"
@@ -439,6 +451,7 @@ func hit_actor(actor, power: float) -> void:
 	floating(actor.position, str(int(amount)) + ("!" if critical else ""), Color("ee887d") if actor == hero else Color("ffe5ac"))
 	if actor == hero:
 		# Wind-up cancellation costs nothing; committed casts keep their cooldown.
+		if cast_index >= 0: hero.attack_time = 0
 		cast_index = -1
 		if dead: finish_run(false)
 	elif dead:
@@ -461,15 +474,17 @@ func spawn_loot(at: Vector3) -> void:
 			drop.item = Content.roll_item(rng, profile.level)
 			drop.node.position = at + Vector3(0, 0.4, 0)
 			drop.node.visible = true
+			V.style_loot(drop.node, drop.item.slot, drop.item.rarity)
 			return
 
-func burst(at: Vector3, radius: float) -> void:
+func burst(at: Vector3, radius: float, kind: String = "nova", direction: Vector3 = Vector3.FORWARD) -> void:
 	for effect in fx:
 		if effect.life <= 0:
 			effect.life = 0.4
 			effect.radius = radius
 			effect.node.position = at + Vector3(0, 0.08, 0)
 			effect.node.visible = true
+			effect.node.configure(kind, radius, direction)
 			return
 
 func floating(at: Vector3, text: String, color: Color) -> void:
@@ -669,11 +684,22 @@ func show_inventory() -> void:
 	for item in profile.inventory:
 		var equipped = profile.equipment.get(item.slot, "") == item.id
 		var text = ("◆ " if equipped else "") + ["COMMON", "RARE", "EPIC"][item.rarity] + "  " + item.name + "  +" + str(item.value)
-		add_button(list, text, func():
+		var item_button = add_button(list, text, func():
 			profile.equipment[item.slot] = item.id
 			stats = Store.stats(profile)
 			hero.maximum = stats.health
 			hero.hp = minf(hero.hp, hero.maximum)
 			save_checkpoint()
 			show_inventory())
+		item_button.icon = Icons.texture(item.slot)
+		item_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		item_button.add_theme_constant_override("icon_max_width", 52)
+		item_button.add_theme_constant_override("h_separation", 18)
+		var item_style = hud.button_style().duplicate()
+		item_style.border_color = Icons.rarity_color(item.rarity)
+		item_style.set_border_width_all(2)
+		item_style.content_margin_left = 18
+		item_style.content_margin_right = 18
+		item_button.add_theme_stylebox_override("normal", item_style)
+		item_button.add_theme_color_override("font_color", Icons.rarity_color(item.rarity))
 	add_button(column, "BACK", close_modal if playing else show_menu)
