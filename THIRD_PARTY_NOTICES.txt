@@ -1,0 +1,8 @@
+Cinderfall is made with the Godot Engine, distributed under the MIT license.
+Godot's license and third-party notices: https://godotengine.org/license/
+
+The bundled Godot MCP runtime bridges are from mkdevkit/godot-mcp.
+Their MIT license is reproduced in GODOT_MCP_LICENSE.txt.
+Local modification: runtime IPC handlers are disabled in release builds.
+
+Editable project source: https://github.com/benforcapita/cinderfall
