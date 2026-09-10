@@ -10,6 +10,7 @@ var held_attack = false
 var finger = -1
 var aim_finger = -1
 var center = Vector2.ZERO
+var idle_center = Vector2.ZERO
 var knob = Vector2.ZERO
 var aim_center = Vector2.ZERO
 var action_fingers: Dictionary = {}
@@ -69,8 +70,8 @@ func _layout() -> void:
 	var safe = DisplayServer.get_display_safe_area()
 	if OS.has_feature("mobile") and window_size.x > 0 and safe.size.x > 0:
 		safe_margin = maxf(28, maxf(safe.position.x, window_size.x - safe.end.x) * size.x / window_size.x + 12)
-	center = Vector2(safe_margin + 108, size.y - 137)
-	knob = center
+	idle_center = Vector2(safe_margin + 108, size.y - 137)
+	reset_input()
 	attack_rect = Rect2(Vector2(size.x - safe_margin - 132, size.y - 179), Vector2(112, 112))
 	skill_rects.clear()
 	for i in range(3):
@@ -85,6 +86,7 @@ func reset_input() -> void:
 	held_attack = false
 	movement = Vector2.ZERO
 	aim = Vector2.ZERO
+	center = idle_center
 	knob = center
 	action_fingers.clear()
 
@@ -93,10 +95,12 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			if event.position.distance_to(center) < 112 and finger == -1:
+			if movement_area(event.position) and finger == -1:
 				finger = event.index
-				update_stick(event.position)
-			elif attack_rect.has_point(event.position):
+				center = event.position
+				knob = center
+				movement = Vector2.ZERO
+			elif attack_rect.has_point(event.position) and aim_finger == -1:
 				aim_finger = event.index
 				aim_center = event.position
 				held_attack = true
@@ -109,6 +113,7 @@ func _input(event: InputEvent) -> void:
 			if event.index == finger:
 				finger = -1
 				movement = Vector2.ZERO
+				center = idle_center
 				knob = center
 			if event.index == aim_finger:
 				aim_finger = -1
@@ -122,9 +127,11 @@ func _input(event: InputEvent) -> void:
 			aim = (event.position - aim_center).limit_length(65) / 65
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
-			if event.position.distance_to(center) < 110:
+			if movement_area(event.position) and finger == -1:
 				finger = -2
-				update_stick(event.position)
+				center = event.position
+				knob = center
+				movement = Vector2.ZERO
 			elif attack_rect.has_point(event.position):
 				held_attack = true
 			else:
@@ -134,13 +141,22 @@ func _input(event: InputEvent) -> void:
 			if finger == -2:
 				finger = -1
 				movement = Vector2.ZERO
+				center = idle_center
 				knob = center
 			held_attack = false
 	if event is InputEventMouseMotion and finger == -2:
 		update_stick(event.position)
 
+func movement_area(point: Vector2) -> bool:
+	if point.x < 0 or point.x >= size.x * 0.45 or point.y < size.y * 0.45 or point.y > size.y: return false
+	for button in [next_button, bag_button, pause_button]:
+		if is_instance_valid(button) and button.visible and button.get_rect().has_point(point): return false
+	return true
+
 func update_stick(point: Vector2) -> void:
 	var offset = (point - center).limit_length(66)
+	# Slide the base under an overextended thumb, so direction reversals stay responsive.
+	if point.distance_to(center) > 66: center = point - offset
 	knob = center + offset
 	movement = offset / 66
 	if movement.length() < 0.12: movement = Vector2.ZERO
@@ -180,7 +196,7 @@ func _draw() -> void:
 	draw_arc(center, 66, 0, TAU, 48, Color("30464e"), 1, true)
 	draw_circle(knob, 34, Color("435e68"))
 	draw_arc(knob, 34, 0, TAU, 48, GOLD, 1.5, true)
-	label_at("MOVE", center + Vector2(-25, 119), 15, Color("a0b4bc"))
+	if finger == -1: label_at("TOUCH TO MOVE", center + Vector2(-63, 119), 14, Color("a0b4bc"))
 	draw_circle(attack_rect.get_center(), 58, Color("865448") if held_attack else Color("493a36"))
 	draw_arc(attack_rect.get_center(), 58, 0, TAU, 64, GOLD, 2, true)
 	draw_texture_rect(Icons.texture("slash"), Rect2(attack_rect.position + Vector2(25, 7), Vector2(64, 64)), false)

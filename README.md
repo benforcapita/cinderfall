@@ -4,7 +4,7 @@ Open `project.godot` in **standard Godot 4.7** and press F6/F5 on `scenes/app_ro
 
 ## Play
 
-- Phone: landscape. Left joystick moves; hold SLASH to attack the closest enemy, or drag outward from it to aim manually. Use another finger to cast while moving/aiming.
+- Phone: landscape. Touch and drag in the lower-left movement area: the joystick appears under your thumb and follows when you drag beyond its radius. Release to stop. Hold SLASH to attack the closest enemy, or drag outward from it to aim manually. Use another finger to cast while moving/aiming. Ability buttons remain fixed.
 - EMBER fires a bolt. NOVA damages, knocks back, and stuns nearby enemies (aiming places its center ahead). MEND restores health and grants four seconds of armor.
 - Tap ENTER THE GATE or walk into the cyan gate. Two waves fill each combat/elite room; the last room contains a two-phase boss.
 - Walk over gold-colored gear to collect it. After combat, BAG lets you equip weapon, armor, and accessory. Full inventory leaves drops on the ground.
@@ -13,6 +13,10 @@ Open `project.godot` in **standard Godot 4.7** and press F6/F5 on `scenes/app_ro
 Public web build: **https://benforcapita.github.io/cinderfall/**. Open on a phone in landscape; the first load downloads approximately 39 MB. Progress is saved in this browser, not shared between devices.
 
 Source: https://github.com/benforcapita/cinderfall. GitHub Pages serves the exported static files from the `gh-pages` branch; `main` contains the editable Godot project. No backend or paid hosting is required for this prototype.
+
+## Haptics
+
+Settings includes a saved HAPTICS on/off switch. Supported devices receive short attack, damage, and loot pulses, rate-limited to avoid continuous buzzing. Opening menus or backgrounding stops vibration. Web support depends on browser and device settings; Safari does not support Godot's standard vibration API. Unsupported devices retain visual/audio feedback. Actual vibration strength and feel require testing on a physical supported phone.
 
 ## Save behavior
 
@@ -23,6 +27,7 @@ Character progress is committed at room clear and when equipping or collecting g
 ```sh
 godot --headless --path . --script res://tests/run_tests.gd
 godot --headless --path . --script res://tests/visual_tests.gd
+godot --headless --path . --script res://tests/touch_tests.gd
 godot --headless --path . --fixed-fps 60 --script res://tests/playthrough.gd -- 719
 mkdir -p builds/web
 godot --headless --path . --export-release Web

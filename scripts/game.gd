@@ -10,6 +10,7 @@ const StatusEffects = preload("res://scripts/status_effects.gd")
 const Icons = preload("res://scripts/icons.gd")
 const BlockEffect = preload("res://scripts/block_effect.gd")
 var statuses = StatusEffects.new()
+var haptics = preload("res://scripts/haptics.gd").new()
 var store = Store.new()
 var profile: Dictionary
 var checkpoint: Dictionary
@@ -289,6 +290,7 @@ func _physics_process(delta: float) -> void:
 			drop.node.visible = false
 			hud.notify("Found " + drop.item.name + " · Equip from BAG after combat")
 			sound(1.5)
+			haptics.pulse("loot", profile.settings.haptics)
 			if cleared: save_checkpoint()
 	if not cleared and alive_count() == 0:
 		wave_wait += delta
@@ -358,6 +360,7 @@ func commit_cast() -> void:
 	cooldowns[index] = skill.cooldown
 	recovery = skill.recovery
 	sound(0.8 + index * 0.3)
+	haptics.pulse("attack", profile.settings.haptics)
 	for effect in skill.effects:
 		resolve_effect(skill, effect)
 
@@ -450,6 +453,7 @@ func hit_actor(actor, power: float) -> void:
 	var dead: bool = actor.hurt(amount)
 	floating(actor.position, str(int(amount)) + ("!" if critical else ""), Color("ee887d") if actor == hero else Color("ffe5ac"))
 	if actor == hero:
+		haptics.pulse("damage", profile.settings.haptics)
 		# Wind-up cancellation costs nothing; committed casts keep their cooldown.
 		if cast_index >= 0: hero.attack_time = 0
 		cast_index = -1
@@ -563,12 +567,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		haptics.stop()
 		if is_instance_valid(hud):
 			hud.reset_input()
 			if playing and not paused: toggle_pause()
 		if not checkpoint.is_empty(): store.save_profile(checkpoint)
 
 func panel(title: String, subtitle: String) -> VBoxContainer:
+	haptics.stop()
 	for child in modal.get_children():
 		modal.remove_child(child)
 		child.queue_free()
@@ -629,7 +635,7 @@ func show_menu() -> void:
 	add_button(column, "EQUIPMENT & INVENTORY", show_inventory)
 	add_button(column, "SETTINGS", show_settings)
 	var help = Label.new()
-	help.text = "TOUCH  ·  Left stick to move  /  Hold Slash to attack\nEmber: firebolt  ·  Nova: blast & stun  ·  Mend: heal\n\nDESKTOP  ·  WASD / Space / 1 2 3 / E next room / Esc pause"
+	help.text = "TOUCH  ·  Touch & drag lower-left to move  /  Hold Slash to attack\nEmber: firebolt  ·  Nova: blast & stun  ·  Mend: heal\n\nDESKTOP  ·  WASD / Space / 1 2 3 / E next room / Esc pause"
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.add_theme_color_override("font_color", Color("8da5b0"))
 	column.add_child(help)
@@ -646,7 +652,7 @@ func toggle_pause() -> void:
 	add_button(column, "ABANDON RUN · KEEP CLEARED-ROOM PROGRESS", show_menu)
 
 func show_settings() -> void:
-	var column = panel("SETTINGS", "Mobile performance & audio")
+	var column = panel("SETTINGS", "Haptics require a supported device and browser.")
 	add_button(column, "FRAME LIMIT: %d FPS · TAP TO SWITCH" % profile.settings.fps, func():
 		profile.settings.fps = 30 if profile.settings.fps == 60 else 60
 		Engine.max_fps = profile.settings.fps
@@ -655,6 +661,12 @@ func show_settings() -> void:
 		show_settings())
 	add_button(column, "SOUND: " + ("ON" if profile.settings.sound else "OFF"), func():
 		profile.settings.sound = not profile.settings.sound
+		checkpoint.settings = profile.settings.duplicate()
+		store.save_profile(checkpoint)
+		show_settings())
+	add_button(column, "HAPTICS: " + ("ON" if profile.settings.haptics else "OFF"), func():
+		profile.settings.haptics = not profile.settings.haptics
+		if not profile.settings.haptics: haptics.stop()
 		checkpoint.settings = profile.settings.duplicate()
 		store.save_profile(checkpoint)
 		show_settings())

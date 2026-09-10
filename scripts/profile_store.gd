@@ -7,7 +7,7 @@ func _init(save_path: String = "user://profile.json") -> void:
 	path = save_path
 
 func fresh() -> Dictionary:
-	return {"version":1, "content_version":1, "level":1, "xp":0, "gold":0, "inventory":[], "equipment":{}, "skills":["slash", "ember", "nova", "mend"], "settings":{"fps":60, "sound":true}, "wins":0}
+	return {"version":1, "content_version":1, "level":1, "xp":0, "gold":0, "inventory":[], "equipment":{}, "skills":["slash", "ember", "nova", "mend"], "settings":{"fps":60, "sound":true, "haptics":true}, "wins":0}
 
 func load_profile() -> Dictionary:
 	for candidate in [path, path + ".bak"]:
@@ -60,6 +60,7 @@ func repair(data: Dictionary) -> Dictionary:
 	if data.get("settings") is Dictionary:
 		clean.settings.fps = 30 if data.settings.get("fps") == 30 else 60
 		clean.settings.sound = data.settings.get("sound", true) == true
+		clean.settings.haptics = data.settings.get("haptics", true) == true
 	return clean
 
 func save_profile(data: Dictionary) -> Error:

@@ -78,6 +78,10 @@ func run() -> void:
 	touch.position = game.hud.center + Vector2(50, 0)
 	touch.pressed = true
 	game.hud._input(touch)
+	var movement_drag = InputEventScreenDrag.new()
+	movement_drag.index = 3
+	movement_drag.position = touch.position + Vector2(50, 0)
+	game.hud._input(movement_drag)
 	var attack = InputEventScreenTouch.new()
 	attack.index = 4
 	attack.position = game.hud.attack_rect.get_center()
